@@ -1,9 +1,7 @@
 name: Genshin Giftcode Notifier
 
 on:
-  schedule:
-    - cron: "0 * * * *"   # chạy mỗi giờ (đầu giờ), check code mới liên tục
-  workflow_dispatch: {}     # cho phép chạy tay để test
+  workflow_dispatch: {}     # nhận trigger từ cron-job.org qua GitHub API
 
 permissions:
   contents: write
