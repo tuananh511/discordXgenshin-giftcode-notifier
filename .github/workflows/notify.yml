@@ -1,0 +1,34 @@
+name: Genshin Giftcode Notifier
+
+on:
+  schedule:
+    - cron: "0 1 * * *"   # 08:00 sáng giờ VN (UTC+7) hằng ngày
+  workflow_dispatch: {}     # cho phép chạy tay để test
+
+permissions:
+  contents: write
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pip install -r requirements.txt
+
+      - name: Fetch codes and notify
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: python notify_codes.py
+
+      - name: Commit updated known_codes.json
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add known_codes.json
+          git diff --staged --quiet || git commit -m "chore: update known codes"
+          git push
