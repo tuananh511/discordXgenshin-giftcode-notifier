@@ -1,8 +1,16 @@
 # 🎁 Genshin Giftcode Notifier
 
+> Tự động phát hiện và gửi giftcode Genshin Impact mới vào Discord mỗi giờ.
+
+![Release](https://img.shields.io/github/v/release/tuananh511/discordXgenshin-giftcode-notifier?style=flat-square)
+![License](https://img.shields.io/github/license/tuananh511/discordXgenshin-giftcode-notifier?style=flat-square)
+![Build](https://img.shields.io/github/actions/workflow/status/tuananh511/discordXgenshin-giftcode-notifier/notify.yml?style=flat-square)
+
+## Overview
+
 Bot tự động kiểm tra giftcode Genshin Impact mới và gửi thông báo vào Discord — chạy hoàn toàn miễn phí bằng GitHub Actions, không cần server riêng.
 
-## Cách hoạt động
+Luồng hoạt động:
 
 ```
 cron-job.org (mỗi giờ, đúng giờ tuyệt đối)
@@ -13,22 +21,16 @@ cron-job.org (mỗi giờ, đúng giờ tuyệt đối)
   → cập nhật lại danh sách code đã biết
 ```
 
-- **Nguồn dữ liệu**: [Hoyocodes API](https://github.com/heartlog/Hoyocodes) (`db.hashblen.com/codes`) — JSON public, tự động cập nhật, không cần đăng nhập.
-- **Không spam**: mỗi code chỉ được thông báo 1 lần nhờ file `known_codes.json` lưu trạng thái, tự commit lại vào repo sau mỗi lần chạy.
-- **Trigger bằng cron-job.org**, không dùng `schedule:` nội bộ của GitHub Actions — GitHub hay throttle/bỏ qua scheduled run vào giờ cao điểm (đặc biệt phút `:00`), gọi API trực tiếp từ bên ngoài chính xác và đáng tin cậy hơn.
-- **Chi phí**: $0 — GitHub Actions free tier (~24 lần/ngày, mỗi lần vài chục giây) + cron-job.org free.
+## Features
 
-## Cấu trúc
+- Tự động fetch giftcode mới nhất từ [Hoyocodes API](https://github.com/heartlog/Hoyocodes) (`db.hashblen.com/codes`) — JSON public, không cần đăng nhập
+- Gửi embed message đẹp mắt vào Discord qua Webhook ngay khi phát hiện code mới
+- Không spam: mỗi code chỉ thông báo 1 lần nhờ `known_codes.json` lưu trạng thái, tự commit lại vào repo sau mỗi lần chạy
+- Trigger bằng cron-job.org thay vì `schedule:` nội bộ của GitHub Actions, tránh bị throttle/bỏ qua vào giờ cao điểm
+- Chi phí $0: GitHub Actions free tier (~24 lần/ngày) + cron-job.org free
+- Dễ đổi sang game khác cùng hệ (Honkai: Star Rail, Zenless Zone Zero) chỉ bằng 1 dòng cấu hình
 
-```
-.
-├── notify_codes.py              # fetch + so sánh + gửi Discord
-├── known_codes.json             # state: danh sách code đã thông báo
-├── requirements.txt
-└── .github/workflows/notify.yml # workflow_dispatch, trigger từ cron-job.org
-```
-
-## Cài đặt
+## Installation
 
 1. Fork/clone repo này
 2. Tạo Discord Webhook: **Server Settings → Integrations → Webhooks → New Webhook** → copy URL
@@ -44,12 +46,25 @@ cron-job.org (mỗi giờ, đúng giờ tuyệt đối)
    - Lịch: mỗi giờ (không cần né phút nào)
 6. Bấm "Run now" trên cron-job.org để test, kiểm tra tab **Actions** trên GitHub có run mới xuất hiện không
 
-## Cấu hình thêm
+## Usage
 
-- Đổi tần suất chạy: sửa lịch trực tiếp trên cron-job.org, không cần đụng vào code/yml
-- Dùng cho game khác (Honkai: Star Rail, Zenless Zone Zero): đổi `GAME_KEY` trong `notify_codes.py` thành `"hsr"` hoặc `"zzz"`
+- **Đổi tần suất chạy**: sửa lịch trực tiếp trên cron-job.org, không cần đụng vào code/yml
+- **Dùng cho game khác**: đổi `GAME_KEY` trong `notify_codes.py` thành `"hsr"` (Honkai: Star Rail) hoặc `"zzz"` (Zenless Zone Zero)
+- **Cấu trúc repo**:
+  ```
+  .
+  ├── notify_codes.py              # fetch + so sánh + gửi Discord
+  ├── known_codes.json             # state: danh sách code đã thông báo
+  ├── requirements.txt
+  └── .github/workflows/notify.yml # workflow_dispatch, trigger từ cron-job.org
+  ```
 
-## Giới hạn
+## Roadmap
 
-- Phụ thuộc vào Hoyocodes API còn hoạt động; nếu API sập lâu dài cần đổi nguồn khác (Game8, Prydwen...)
-- Không có xử lý retry nếu Discord webhook tạm thời lỗi (sẽ thử lại ở lần chạy cron kế tiếp)
+- [ ] Thêm cơ chế retry khi Discord webhook lỗi tạm thời
+- [ ] Hỗ trợ nguồn dữ liệu dự phòng (Game8, Prydwen...) khi Hoyocodes API sập
+- [ ] Hỗ trợ gửi thông báo song song cho nhiều game cùng lúc
+
+## License
+
+MIT
