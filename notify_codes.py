@@ -10,8 +10,11 @@ CODES_API_URL = "https://db.hashblen.com/codes"
 KNOWN_CODES_FILE = Path("known_codes.json")
 GAME_KEY = "genshin"  # đổi thành "hsr" hoặc "zzz" nếu muốn dùng lại cho game khác
 
-# Icon Genshin dùng làm thumbnail cho embed — có thể đổi sang link ảnh khác tùy thích
-THUMBNAIL_URL = "https://upload.wikimedia.org/wikipedia/commons/4/44/Genshin_Impact_logo.png"
+# Icon dùng làm thumbnail cho embed. Logo chính thức Genshin không có bản free-license
+# ổn định để nhúng link trực tiếp (dễ bị xóa/404 như link Wikimedia cũ). Khuyên dùng:
+# tự upload 1 ảnh icon vào repo (vd: assets/icon.png) rồi trỏ tới link raw GitHub, ví dụ:
+# https://raw.githubusercontent.com/<user>/<repo>/main/assets/icon.png
+THUMBNAIL_URL = "https://raw.githubusercontent.com/tuananh511/discordXgenshin-giftcode-notifier/main/assets/icon.png"
 
 
 def load_known_codes() -> set[str]:
@@ -57,12 +60,29 @@ def format_expiry_badge(code: dict) -> str:
         return ""
 
 
+def format_description(desc: str) -> str:
+    """Định dạng lại description thô từ API (dạng 'Item*Qty;Item*Qty;...')
+    thành danh sách gạch đầu dòng, tránh dấu * bị Discord hiểu nhầm thành in nghiêng."""
+    if not desc:
+        return ""
+    items = [item.strip() for item in desc.split(";") if item.strip()]
+    formatted = []
+    for item in items:
+        name, sep, qty = item.rpartition("*")
+        if sep and qty.strip().lstrip("x").isdigit():
+            formatted.append(f"• {name.strip()} ×{qty.strip()}")
+        else:
+            # không đúng định dạng "tên*số lượng" như kỳ vọng -> escape dấu * để không vỡ markdown
+            formatted.append(f"• {item.replace('*', chr(92) + '*')}")
+    return "\n".join(formatted)
+
+
 def send_discord_notification(webhook_url: str, new_codes: list[dict]) -> None:
     """Gửi embed message vào Discord webhook cho các code mới."""
     lines = []
     for c in new_codes:
         code = c.get("code", "???")
-        desc = c.get("description", "").strip()
+        desc = format_description(c.get("description", "").strip())
         redeem_url = f"https://genshin.hoyoverse.com/en/gift?code={code}"
         badge = format_expiry_badge(c)
         header = f"**`{code}`**{badge}"
@@ -71,17 +91,16 @@ def send_discord_notification(webhook_url: str, new_codes: list[dict]) -> None:
 
     checked_at = datetime.now(timezone.utc).strftime("%H:%M UTC")
 
-    payload = {
-        "embeds": [
-            {
-                "title": "🎁 Genshin Impact - Giftcode mới!",
-                "description": "\n\n".join(lines),
-                "color": 0x1E90FF,
-                "thumbnail": {"url": THUMBNAIL_URL},
-                "footer": {"text": f"Check tự động mỗi giờ · Nguồn: Hoyocodes · Kiểm tra lúc {checked_at}"},
-            }
-        ]
+    embed = {
+        "title": "🎁 Genshin Impact - Giftcode mới!",
+        "description": "\n\n".join(lines),
+        "color": 0x1E90FF,
+        "footer": {"text": f"Check tự động mỗi giờ · Nguồn: Hoyocodes · Kiểm tra lúc {checked_at}"},
     }
+    if THUMBNAIL_URL:
+        embed["thumbnail"] = {"url": THUMBNAIL_URL}
+
+    payload = {"embeds": [embed]}
     resp = requests.post(webhook_url, json=payload, timeout=15)
     resp.raise_for_status()
 
